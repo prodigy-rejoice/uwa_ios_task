@@ -91,11 +91,12 @@ final class FeedViewModel: ObservableObject {
     }
 
     private func handleReachabilityChange() async {
-        if Reachability.shared.isConnected {
+        let online = await Reachability.shared.confirmConnected()
+        if online {
             guard isOffline else { return }
             isLoading = false
             await loadFeed()
-        } else {
+        } else if !isOffline {
             applyCachedFallback()
         }
     }

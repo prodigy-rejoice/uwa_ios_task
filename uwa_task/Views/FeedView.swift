@@ -30,6 +30,8 @@ struct FeedView: View {
             .background(Color.white)
             .navigationTitle("UWA Social")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Color.white, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
         }
         .tint(.accentColor)
         .task {

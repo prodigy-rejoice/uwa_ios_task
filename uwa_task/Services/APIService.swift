@@ -16,34 +16,40 @@ extension Notification.Name {
     static let uwaReachabilityChanged = Notification.Name("uwaReachabilityChanged")
 }
 
-/// One monitor for the life of the app. A fresh monitor on each request often reports offline on the first update, even after the device is back online.
-final class Reachability {
+/// Watches the network path and confirms it with a short request.
+/// The simulator can report an unsatisfied path while Wi-Fi is actually up, which left the offline banner stuck.
+nonisolated final class Reachability: @unchecked Sendable {
     static let shared = Reachability()
 
     private let monitor = NWPathMonitor()
-    private let lock = NSLock()
-    private var connected = true
-
-    var isConnected: Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        return connected
-    }
+    private static let probeURL = URL(string: "https://captive.apple.com/hotspot-detect.html")
 
     private init() {
-        monitor.pathUpdateHandler = { [weak self] path in
-            self?.update(path.status == .satisfied)
+        monitor.pathUpdateHandler = { _ in
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .uwaReachabilityChanged, object: nil)
+            }
         }
         monitor.start(queue: DispatchQueue(label: "uwa.reachability"))
     }
 
-    private func update(_ isConnected: Bool) {
-        lock.lock()
-        let changed = connected != isConnected
-        connected = isConnected
-        lock.unlock()
-        guard changed else { return }
-        NotificationCenter.default.post(name: .uwaReachabilityChanged, object: nil)
+    func confirmConnected() async -> Bool {
+        if monitor.currentPath.status == .satisfied {
+            return true
+        }
+        guard let probeURL = Self.probeURL else { return false }
+
+        var request = URLRequest(url: probeURL)
+        request.httpMethod = "HEAD"
+        request.timeoutInterval = 3
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            return response is HTTPURLResponse
+        } catch {
+            return false
+        }
     }
 }
 
@@ -52,7 +58,7 @@ final class Reachability {
 final class APIService: APIServicing {
     func fetchPosts(page: Int, limit: Int) async throws -> PostPage {
         try await Task.sleep(nanoseconds: 350_000_000)
-        guard Reachability.shared.isConnected else { throw APIError.network }
+        guard await Reachability.shared.confirmConnected() else { throw APIError.network }
         guard page > 0, limit > 0 else { throw APIError.invalidURL }
 
         let all = MockFeed.posts

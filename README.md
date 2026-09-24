@@ -65,6 +65,8 @@ The feed view model has tests covering:
 * Error handling
 * Liking a post
 
-## Scope
+![simulator_screenshot_63086251-A19B-4D89-8494-D92FF94011B7](https://github.com/user-attachments/assets/d4338d52-5b12-4bb2-b6fb-8bd2f5273892)
 
-The focus of this assessment was the feed experience and the requirements provided. Features such as authentication, comments, server-side likes, messaging, and other social screens were intentionally left outside the scope.
+
+![simulator_screenshot_2DE5E2ED-FF42-48E4-BAF6-31463D58CFE1](https://github.com/user-attachments/assets/d83c438c-7cd8-46c0-8450-3aaa9d7d308e)
+
